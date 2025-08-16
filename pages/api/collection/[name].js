@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const { key, name, limit = 10, skip = 0 } = req.query;
+  const { key, name, limit = 10, skip = 0, database } = req.query;
   
   if (key !== process.env.ACCESS_KEY) {
     return res.status(401).json({ message: 'Unauthorized' });
@@ -15,7 +15,9 @@ export default async function handler(req, res) {
 
   try {
     await client.connect();
-    const db = client.db();
+    
+    // Используем указанную базу данных или берем из URI
+    const db = database ? client.db(database) : client.db();
     const collection = db.collection(name);
     
     const documents = await collection
@@ -28,6 +30,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       collection: name,
+      database: db.databaseName,
       totalCount,
       documents: documents.map(doc => ({
         ...doc,
